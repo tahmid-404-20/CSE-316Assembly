@@ -1,0 +1,75 @@
+; signed input, give a minus - sign in front for negative number, and start number directly for positive
+; stores the number in bx
+INP_SIGNED PROC
+   PUSH AX   
+   PUSH CX
+   
+   XOR BX,BX
+   
+   
+   MOV AH,1
+   INT 21H   
+   CMP AL,'-'
+   JE NEG_NUM_INPUT   
+   
+   CMP AL,' '
+   JE INPUT_END
+   ; IF YOU WANT TO SEPERATE USING ENTER   
+   CMP AL,0DH
+   JE INPUT_END
+   CMP AL,0AH
+   JE INPUT_END
+   
+   
+POS_NUM_INP:  ;if pos input, then need to consider the very first digit
+    MOV DX, 0 ; flag indicating positive number
+    PUSH DX
+    
+    AND AX,000FH
+    MOV CX,AX
+    
+    MOV AX,10
+    MUL BX
+    ADD AX,CX
+    MOV BX,AX
+    JMP INPUT_LOOP
+    
+NEG_NUM_INPUT:
+    MOV DX, 1 ;flag indicating negative number
+    PUSH DX 
+    
+    
+INPUT_LOOP:
+    MOV AH,1
+    INT 21H
+    
+    CMP AL,' '
+    JE INPUT_END
+    CMP AL,0DH
+    JE INPUT_END
+    CMP AL,0AH
+    JE INPUT_END
+    
+    AND AX,000FH
+    MOV CX,AX
+    
+    MOV AX,10
+    MUL BX
+    ADD AX,CX
+    MOV BX,AX
+    JMP INPUT_LOOP
+
+INPUT_END:
+    
+    POP DX
+    CMP DX,1
+    JNE INPUT_RET
+    NEG BX  
+   
+   
+INPUT_RET:   
+   POP CX
+   POP AX    
+   RET 
+    
+INP_SIGNED ENDP

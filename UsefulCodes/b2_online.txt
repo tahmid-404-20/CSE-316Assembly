@@ -1,0 +1,99 @@
+.MODEL SMALL
+.STACK 100H
+
+.DATA
+HASH_EQUAL DB 'PE$'
+HASH_DIF DB 'NE$'
+
+.CODE
+MAIN PROC
+   MOV AX, @DATA
+   MOV DS,AX
+   
+   XOR BX,BX
+   
+   MOV AH,1
+     
+   MOV CL,1
+WORD1_INP:
+    INT 21H
+    
+    CMP AL,0DH
+    JE END1
+    CMP AL,0AH
+    JE END1
+    
+    SUB AL,60H ; a to 1
+    
+    ;hascode compute
+    MUL CL
+    ADD BX,AX
+    
+    ;reset things
+    MOV AH,1
+    INC CL
+    JMP WORD1_INP
+
+END1:
+   
+   MOV AH,2   
+   ;NEW LINE
+   MOV DL,0DH
+   INT 21H   
+   MOV DL,0AH
+   INT 21H
+   
+   MOV AH,1
+      
+   MOV CL,1
+   XOR DX,DX  
+    
+WORD2_INP:
+    INT 21H
+    
+    CMP AL,0DH
+    JE EXIT
+    CMP AL,0AH
+    JE EXIT
+    
+    SUB AL,60H ; a to 1
+    
+    ;hascode compute
+    MUL CL
+    ADD DX,AX
+    
+    ;reset things
+    MOV AH,1
+    INC CL
+    JMP WORD2_INP
+    
+EXIT:
+
+    MOV CX,DX
+    
+    MOV AH,2
+   ;NEW LINE
+   MOV DL,0DH
+   INT 21H   
+   MOV DL,0AH
+   INT 21H
+   
+   CMP CX,BX
+   JZ EQUAL
+   
+   LEA DX, HASH_DIF
+   JMP PRINT
+   
+EQUAL:
+   LEA DX,HASH_EQUAL
+
+PRINT:
+   
+   MOV AH, 09H
+   INT 21H
+   
+   MOV AH, 4CH
+   INT 21H     
+    
+MAIN ENDP
+END MAIN

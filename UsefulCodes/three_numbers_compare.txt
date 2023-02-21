@@ -1,0 +1,71 @@
+.MODEL SMALL
+.STACK 100H
+
+.DATA
+MSG DB 'All the numbers are equal$'
+
+.CODE
+
+MAIN PROC
+   
+   MOV AX, @DATA
+   MOV DS, AX
+   
+   MOV AH,1
+   
+   ;take inputs her, think BL as a, BH as b, CL as c 
+   INT 21H   
+   MOV BL,AL
+   
+   INT 21H
+   MOV BH,AL
+   
+   INT 21H
+   MOV CL,AL
+   
+   CMP BL,BH   
+   JL BGTA
+   JZ FIRST2_EQUAL ;a==b
+   
+   ;a > b   
+   CMP BL,CL
+   JGE C_IS
+   JMP A_IS
+    
+BGTA:   ; b<a
+  CMP BH,CL 
+  JGE C_IS
+  JMP B_IS  
+
+FIRST2_EQUAL:   
+   CMP BH,CL
+   JZ ALL_EQUAL 
+
+
+A_IS:
+  MOV DL, BL
+  JMP PRINT
+
+B_IS:
+  MOV DL, BH
+  JMP PRINT  
+
+C_IS:
+  MOV DL, CL
+
+ALL_EQUAL:
+  LEA DX, MSG
+  MOV AH, 09H
+  INT 21H
+  JMP ENDING
+    
+PRINT:
+  MOV AH,2
+  INT 21H
+  
+ENDING:
+  MOV AH, 4CH
+  INT 21H     
+    
+MAIN ENDP
+END MAIN

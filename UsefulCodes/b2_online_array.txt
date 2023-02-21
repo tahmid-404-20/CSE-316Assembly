@@ -1,0 +1,303 @@
+.MODEL SMALL 
+.STACK 100H 
+.DATA
+
+ARRAY_END DB ?
+ARR1 DW 15 DUP(?)
+ARR2 DW 15 DUP(?)
+ARR3 DW 15 DUP(?)
+LEN_ARR1 DW 0
+LEN_ARR2 DW 0
+LEN3 DW 0
+FOUND DW 0
+.CODE 
+MAIN PROC
+    ; init DS
+    MOV AX, @DATA
+    MOV DS, AX
+    
+    ; ARR1 INPUT    
+    XOR SI,SI
+    MOV ARRAY_END,0
+  ARR1_INP:   
+    CALL INP_SIGNED_ARRAY
+    MOV ARR1[SI] , BX
+    ADD SI,2
+    INC LEN_ARR1
+    CMP ARRAY_END, 0
+    JE ARR1_INP
+    
+  
+    
+    
+    MOV AH,2
+    ;NEW LINE
+    MOV DL,0DH
+    INT 21H   
+    MOV DL,0AH
+    INT 21H
+    
+    
+    ;ARR2_INPUT
+    XOR SI,SI
+    MOV ARRAY_END,0
+  ARR2_INP:
+    CALL INP_SIGNED_ARRAY
+    MOV ARR2[SI] , BX
+    ADD SI,2
+    INC LEN_ARR2
+    CMP ARRAY_END, 0
+    JE ARR2_INP
+    
+    
+    XOR SI,SI
+    XOR BX,BX
+    
+  OUTER:
+    MOV AX,SI
+    CMP AX, LEN_ARR1
+    JGE EXIT_OUTER
+    
+    MOV FOUND,0
+    XOR DI,DI
+    INNER:    
+        MOV AX, DI
+        CMP AX, LEN_ARR2
+        JGE EXIT_INNER
+        MOV AX,ARR1[SI]
+        CMP AX, ARR2[DI]
+        JE FND
+        ADD DI,2
+        JMP INNER
+    
+        JMP EXIT_INNER
+        
+       FND:
+        MOV FOUND,1
+    
+    EXIT_INNER:
+        CMP FOUND,0
+        JE ADD_EL
+        JMP INC_INDEX
+        
+    
+    ADD_EL:
+        MOV AX, ARR1[SI]
+        MOV ARR3[BX], AX
+        INC LEN3
+        ADD BX,2
+        
+    INC_INDEX:
+        ADD SI,2
+        
+        JMP OUTER
+        
+    
+  EXIT_OUTER:
+    
+    
+    MOV AH,2
+    ;NEW LINE
+    MOV DL,0DH
+    INT 21H   
+    MOV DL,0AH
+    INT 21H
+    
+    
+    ;ARR3_OUTPUT
+    XOR SI,SI
+    MOV AH,2
+    MOV CX, LEN3
+  ARR3_OUT_LOOP:
+    MOV BX, ARR3[SI]
+    CALL PRINT
+    MOV DL, ' '
+    INT 21H
+    ADD SI,2
+    LOOP ARR3_OUT_LOOP
+    
+	; interrupt to exit
+    MOV AH, 4CH
+    INT 21H    
+    
+  
+MAIN ENDP
+
+; multiplies the numbers in ax, bx and stores result in dx
+MULTIPLY PROC
+   PUSH AX     ;a*b  , AX -> a, BX -> b
+   PUSH BX   
+   
+   XOR DX,DX
+   
+REPEAT:
+   TEST AX,1
+   JZ END_IF   
+   ADD DX, AX  
+   
+END_IF:
+    
+   SHR AX,1
+   SHL BX,1
+   JNZ REPEAT   
+   
+   POP BX
+   POP AX
+   
+   RET
+               
+MULTIPLY ENDP
+
+
+; prints the number in bx, treats the msb as the sign bit
+PRINT PROC
+   PUSH AX
+   PUSH BX   
+   PUSH CX
+   PUSH DX
+   
+   ; check if the number is zero
+   CMP BX, 0
+   JNE SHOW_NUMBER
+   
+   MOV DL, '0'
+   MOV AH,2   
+   INT 21H
+   JMP GET_BACK_PRINT  
+   
+      
+SHOW_NUMBER:
+   MOV AX,BX
+   MOV BX,10
+   XOR DX,DX
+   XOR CX,CX
+   
+   TEST AX, 8000H
+   JZ GET_NUM
+   
+   ;the number is negative, 2's complement
+   PUSH AX
+   MOV AH, 2
+   MOV DL, '-'
+   INT 21H
+   
+   XOR DX,DX
+   POP AX   
+   NEG AX   
+   
+;ax = n, bx = 10   
+GET_NUM:
+   DIV BX
+   PUSH DX
+   INC CX
+   
+   XOR DX,DX ;avoid divide overflow
+   CMP AX, 0    
+   JNZ GET_NUM
+   
+   
+   MOV AH, 2
+PRINT_LOOP:
+   POP DX
+   ADD DL,'0'
+   INT 21H
+   LOOP PRINT_LOOP
+   
+
+GET_BACK_PRINT:
+   POP DX
+   POP CX
+   POP BX
+   POP AX    
+   RET
+
+PRINT ENDP
+
+
+; signed input, give a minus - sign in front for negative number, and start number directly for positive
+INP_SIGNED_ARRAY PROC
+   PUSH AX   
+   PUSH CX
+   PUSH DX
+   
+   XOR BX,BX
+   
+   
+   MOV AH,1
+   INT 21H   
+   CMP AL,'-'
+   JE NEG_NUM_INPUT   
+   
+   CMP AL,' '
+   JE INPUT_END
+   ; IF YOU WANT TO SEPERATE USING ENTER   
+   CMP AL,0DH
+   JE INPUT_END_ARRAY
+   CMP AL,0AH
+   JE INPUT_END_ARRAY
+   
+   
+POS_NUM_INP:  ;if pos input, then need to consider the very first digit
+    MOV DX, 0 ; flag indicating positive number
+    PUSH DX
+    
+    AND AX,000FH
+    MOV CX,AX
+    
+    MOV AX,10
+    MUL BX
+    ADD AX,CX
+    MOV BX,AX
+    JMP INPUT_LOOP
+    
+NEG_NUM_INPUT:
+    MOV DX, 1 ;flag indicating negative number
+    PUSH DX 
+    
+    
+INPUT_LOOP:
+    MOV AH,1
+    INT 21H
+    
+    CMP AL,' '
+    JE INPUT_END
+    CMP AL,0DH
+    JE INPUT_END_ARRAY
+    CMP AL,0AH
+    JE INPUT_END_ARRAY
+    
+    AND AX,000FH
+    MOV CX,AX
+    
+    MOV AX,10
+    MUL BX
+    ADD AX,CX
+    MOV BX,AX
+    JMP INPUT_LOOP
+
+    
+    JMP INPUT_END
+    
+INPUT_END_ARRAY:
+    MOV ARRAY_END, 1    
+
+
+INPUT_END:
+    
+    POP DX
+    CMP DX,1
+    JNE INPUT_RET
+    NEG BX  
+   
+   
+INPUT_RET:   
+   POP DX
+   POP CX
+   POP AX    
+   RET 
+    
+INP_SIGNED_ARRAY ENDP
+
+END MAIN 
+
+

@@ -1,0 +1,102 @@
+.MODEL SMALL
+.STACK 100H
+
+.DATA
+N DB ?
+CR EQU 0DH
+LF EQU 0AH
+
+.CODE
+
+MAIN PROC
+    
+    MOV AX,@DATA
+    MOV DS,AX    
+    
+    XOR BX,BX    
+    
+INPUT_LOOP:
+    MOV AH,1
+    INT 21H
+    
+    CMP AL,CR
+    JE INPUT_END
+    CMP AL,LF
+    JE INPUT_END
+    
+    AND AX,000FH
+    MOV CL,AL
+    
+    MOV AL,10
+    MUL BL
+    ADD AL,CL
+    MOV BL,AL
+    JMP INPUT_LOOP    
+
+INPUT_END:
+    
+    MOV N,BL
+    
+    XOR CL,CL ; COUNT = 0
+    
+    MOV BL,2  ; I = 2
+
+    
+    
+LOUT: ; WHILE I <= N
+    MOV AL,N
+    CMP BL,AL
+    JG END_OUTER  
+    
+    XOR DL,DL ; SUM = 0
+    MOV BH,2  ; J = 2
+    INNER:  ; CHECK FOR SUM
+    ; WHILE J < I
+        CMP BH,BL
+        JGE END_INNER
+        
+        MOV AL,BL
+        XOR AH,AH
+        DIV BH
+        CMP AH,0
+        
+        JNE SUM_NOTADD
+         
+        ADD DL,BH
+        
+        
+       SUM_NOTADD:
+        INC BH
+        JMP INNER
+    
+    END_INNER:
+    CMP DL,BL
+    
+    JLE NOT_INCREMENT
+    INC CL
+    
+    NOT_INCREMENT:
+    INC BL
+    JMP LOUT        
+
+
+END_OUTER:
+    
+    MOV AH,2
+    
+    ;NEW LINE
+    MOV DL,0DH
+    INT 21H   
+    MOV DL,0AH
+    INT 21H
+    
+    MOV DL,CL
+    ADD DL,'0'
+    INT 21H
+    
+    MOV AH, 4CH
+    INT 21H
+    
+    
+MAIN ENDP
+END MAIN

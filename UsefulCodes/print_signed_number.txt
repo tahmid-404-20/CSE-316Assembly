@@ -1,0 +1,63 @@
+; prints the number in bx, treats the msb as the sign bit
+PRINT PROC
+   PUSH AX
+   PUSH BX   
+   PUSH CX
+   PUSH DX
+   
+   ; check if the number is zero
+   CMP BX, 0
+   JNE SHOW_NUMBER
+   
+   MOV DL, '0'
+   MOV AH,2   
+   INT 21H
+   JMP GET_BACK_PRINT  
+   
+      
+SHOW_NUMBER:
+   MOV AX,BX
+   MOV BX,10
+   XOR DX,DX
+   XOR CX,CX
+   
+   TEST AX, 8000H
+   JZ GET_NUM
+   
+   ;the number is negative, 2's complement
+   PUSH AX
+   MOV AH, 2
+   MOV DL, '-'
+   INT 21H
+   
+   XOR DX,DX
+   POP AX   
+   NEG AX   
+   
+;ax = n, bx = 10   
+GET_NUM:
+   DIV BX
+   PUSH DX
+   INC CX
+   
+   XOR DX,DX ;avoid divide overflow
+   CMP AX, 0    
+   JNZ GET_NUM
+   
+   
+   MOV AH, 2
+PRINT_LOOP:
+   POP DX
+   ADD DL,'0'
+   INT 21H
+   LOOP PRINT_LOOP
+   
+
+GET_BACK_PRINT:
+   POP DX
+   POP CX
+   POP BX
+   POP AX    
+   RET
+
+PRINT ENDP
